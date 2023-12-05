@@ -16,4 +16,9 @@ class User extends Model
         return $this->hasMany('App\Models\Tweet');
     }
 
+    public function like()
+    {
+        return $this->hasMany('App\Models\Like');
+    }
+
 }

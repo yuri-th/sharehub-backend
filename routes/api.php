@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\TweetController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\LikeController;
 
 
 
@@ -20,6 +21,7 @@ use App\Http\Controllers\LoginController;
 
 Route::apiResource('/share', UserController::class);
 Route::apiResource('/tweet', TweetController::class);
+Route::apiResource('/like', LikeController::class);
 
 // ログイン関連のAPIルート
 Route::post('/login', [LoginController::class, 'login']);
