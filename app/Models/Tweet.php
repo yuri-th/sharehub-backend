@@ -24,4 +24,9 @@ class Tweet extends Model
         return $this->hasMany('App\Models\Like');
     }
 
+    public function comment()
+    {
+        return $this->hasMany('App\Models\Comment');
+    }
+
 }

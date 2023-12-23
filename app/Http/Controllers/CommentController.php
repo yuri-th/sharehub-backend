@@ -3,13 +3,12 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\Validator;
+use App\Models\Comment;
 use App\Models\Tweet;
 use App\Models\User;
 use Illuminate\Http\Request;
-use App\Http\Resources\TweetResource;
 
-
-class TweetController extends Controller
+class CommentController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -19,17 +18,17 @@ class TweetController extends Controller
     public function index()
     {
         try {
-            $items = Tweet::with('user')->get();
-            $formattedTweets = $items->map(function ($tweet) {
+            $items = Comment::with('user')->get();
+            $formattedComments = $items->map(function ($comment) {
                 return [
-                    'user_name' => $tweet->user->name,
-                    'tweet_text' => $tweet->tweet_text,
-                    'tweet_id' => $tweet->id,
+                    'user_name' => $comment->user->name,
+                    'comment' => $comment->comment,
+                    'tweet_id' => $comment->tweet_id,
                 ];
             });
 
             return response()->json([
-                'data' => $formattedTweets,
+                'data' => $formattedComments,
             ], 200);
         } catch (\Exception $e) {
             // 例外が発生した場合、ログにエラーを記録する
@@ -42,14 +41,6 @@ class TweetController extends Controller
     }
 
     /**
-     * Firebase ID トークンを検証してユーザー情報を取得
-     *
-     * @param string $idToken
-     * @return mixed|null
-     */
-
-
-    /**
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
@@ -59,9 +50,10 @@ class TweetController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'tweet_text' => 'required|string|max:400',
                 'uid' => 'required|string',
                 'id_token' => 'required|string',
+                'tweet_id' => 'required',
+                'comment' => 'required|string|max:400',
             ]);
 
             if ($validator->fails()) {
@@ -74,52 +66,46 @@ class TweetController extends Controller
             $laravelUser = User::where('firebase_uid', $request->uid)->first();
 
             \Log::info('Debug: ' . json_encode($laravelUser));
+            \Log::info('Debug: ' . json_encode($request->all()));
+
+
 
             $user_id = $laravelUser->id;
 
-            $tweet = Tweet::create([
+            $comment = Comment::create([
                 'user_id' => $user_id,
-                'tweet_text' => $request->input('tweet_text'),
+                'tweet_id' => $request->tweet_id,
+                'comment' => $request->input('comment'),
             ]);
 
-            return response()->json(['data' => $tweet], 201);
+            return response()->json(['data' => $comment], 201);
         } catch (\Exception $e) {
-            \Log::error('TweetController@store Error: ' . $e->getMessage());
+            \Log::error('CommentController@store Error: ' . $e->getMessage());
+            \Log::info('Debug: Comment data - ' . json_encode($request->input('comment')));
             \Log::error($e);
             return response()->json(['error' => 'Internal Server Error'], 500);
         }
     }
 
-
-
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
+     * @param  \App\Models\Comment  $comment
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show(Comment $comment)
     {
-        // $data = Tweet::select('id')->find($id);
-        // return response()->json(['data' => $data]);
-        // ツイートを取得
-        $tweet = Tweet::with('user')->find($id);
-
-        if (!$tweet) {
-            return response()->json(['error' => 'Tweet not found'], 404);
-        }
-
-        return new TweetResource($tweet);
+        //
     }
 
     /**
      * Update the specified resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
+     * @param  \App\Models\Comment  $comment
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, Comment $comment)
     {
         //
     }
@@ -127,33 +113,11 @@ class TweetController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int  $id
+     * @param  \App\Models\Comment  $comment
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Request $request, $id)
+    public function destroy(Comment $comment)
     {
-        \Log::info('Tweet ID: ' . $id);
-        \Log::error('Tweet not found for ID: ' . $id);
-
-        $userUid = $request->header('X-User-UID');
-
-        $user = User::where('firebase_uid', $userUid)->first();
-
-        if ($user) {
-            $tweet = Tweet::find($id);
-
-            if (!$tweet) {
-                return response()->json(['error' => 'Tweet not found'], 404);
-            }
-
-            if ($tweet->user_id === $user->id) {
-                $tweet->delete();
-                return response()->json(['message' => 'Tweet deleted successfully']);
-            } else {
-                return response()->json(['error' => 'Unauthorized'], 403);
-            }
-        } else {
-            return response()->json(['error' => 'User not authenticated'], 401);
-        }
+        //
     }
 }
