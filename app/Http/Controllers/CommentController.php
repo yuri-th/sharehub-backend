@@ -116,8 +116,28 @@ class CommentController extends Controller
      * @param  \App\Models\Comment  $comment
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Comment $comment)
+    public function destroy(Request $request, $id)
     {
-        //
+        $userUid = $request->header('X-User-UID');
+        $user = User::where('firebase_uid', $userUid)->first();
+
+        if ($user) {
+            $comment = Comment::find($id);
+
+
+
+            if (!$comment) {
+                return response()->json(['error' => 'Comment not found'], 404);
+            }
+
+            if ($comment->user_id === $user->id) {
+                $comment->delete();
+                return response()->json(['message' => 'Comment deleted successfully']);
+            } else {
+                return response()->json(['error' => 'Unauthorized'], 403);
+            }
+        } else {
+            return response()->json(['error' => 'User not authenticated'], 401);
+        }
     }
 }
