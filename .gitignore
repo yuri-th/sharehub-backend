@@ -13,6 +13,7 @@ npm-debug.log
 yarn-error.log
 /.idea
 /.vscode
+.DS_Store
 
 # Ignore Firebase credentials
 config/firebase/sharehub-e2ee3-firebase-adminsdk-si78h-a78fe7e154.json
