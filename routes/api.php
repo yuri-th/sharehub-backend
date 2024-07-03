@@ -24,6 +24,9 @@ Route::apiResource('/share', UserController::class);
 Route::apiResource('/tweet', TweetController::class);
 Route::apiResource('/like', LikeController::class);
 Route::apiResource('/comment', CommentController::class);
+Route::delete('/comment/{tweetId}', [CommentController::class, 'destroyByTweetId']);
+
+
 
 // ログイン関連のAPIルート
 Route::post('/login', [LoginController::class, 'login']);

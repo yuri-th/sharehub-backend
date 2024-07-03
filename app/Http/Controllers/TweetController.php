@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Tweet;
 use App\Models\User;
+use App\Models\like;
+use App\Models\Comment;
 use Illuminate\Http\Request;
 use App\Http\Resources\TweetResource;
 
@@ -72,11 +74,7 @@ class TweetController extends Controller
 
             // Laravelデータベース内でFirebase UIDを使ってユーザーを取得
             $laravelUser = User::where('firebase_uid', $request->uid)->first();
-
-            \Log::info('Debug: ' . json_encode($laravelUser));
-
             $user_id = $laravelUser->id;
-
             $tweet = Tweet::create([
                 'user_id' => $user_id,
                 'tweet_text' => $request->input('tweet_text'),
@@ -84,8 +82,6 @@ class TweetController extends Controller
 
             return response()->json(['data' => $tweet], 201);
         } catch (\Exception $e) {
-            \Log::error('TweetController@store Error: ' . $e->getMessage());
-            \Log::error($e);
             return response()->json(['error' => 'Internal Server Error'], 500);
         }
     }
@@ -100,11 +96,7 @@ class TweetController extends Controller
      */
     public function show($id)
     {
-        // $data = Tweet::select('id')->find($id);
-        // return response()->json(['data' => $data]);
-        // ツイートを取得
         $tweet = Tweet::with('user')->find($id);
-
         if (!$tweet) {
             return response()->json(['error' => 'Tweet not found'], 404);
         }
@@ -119,41 +111,43 @@ class TweetController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
-    {
-        //
-    }
+    // public function update(Request $request, $id)
+    // {
+    //     //
+    // }
 
     /**
      * Remove the specified resource from storage.
      *
      * @param  int  $id
      * @return \Illuminate\Http\Response
+     *
+     * ツイートと一緒に、関連するいいねとコメントを削除
      */
     public function destroy(Request $request, $id)
     {
-        \Log::info('Tweet ID: ' . $id);
-        \Log::error('Tweet not found for ID: ' . $id);
-
         $userUid = $request->header('X-User-UID');
-
         $user = User::where('firebase_uid', $userUid)->first();
-
-        if ($user) {
-            $tweet = Tweet::find($id);
-
-            if (!$tweet) {
-                return response()->json(['error' => 'Tweet not found'], 404);
-            }
-
-            if ($tweet->user_id === $user->id) {
-                $tweet->delete();
-                return response()->json(['message' => 'Tweet deleted successfully']);
-            } else {
-                return response()->json(['error' => 'Unauthorized'], 403);
-            }
-        } else {
+        if (!$user) {
             return response()->json(['error' => 'User not authenticated'], 401);
         }
+        $tweet = Tweet::find($id);
+        if (!$tweet) {
+            return response()->json(['error' => 'Tweet not found'], 404);
+        }
+        if ($tweet->user_id !== $user->id) {
+            return response()->json(['error' => '投稿者以外削除できません'], 403);
+        }
+        $likes = Like::where('tweet_id', $id)->get();
+        foreach ($likes as $like) {
+            $like->delete();
+        }
+        $comments = Comment::where('tweet_id', $id)->get();
+        foreach ($comments as $comment) {
+            $comment->delete();
+        }
+        $tweet->delete();
+
+        return response()->json(['message' => 'Tweet deleted successfully']);
     }
 }

@@ -64,14 +64,7 @@ class CommentController extends Controller
 
             // Laravelデータベース内でFirebase UIDを使ってユーザーを取得
             $laravelUser = User::where('firebase_uid', $request->uid)->first();
-
-            \Log::info('Debug: ' . json_encode($laravelUser));
-            \Log::info('Debug: ' . json_encode($request->all()));
-
-
-
             $user_id = $laravelUser->id;
-
             $comment = Comment::create([
                 'user_id' => $user_id,
                 'tweet_id' => $request->tweet_id,
@@ -124,17 +117,39 @@ class CommentController extends Controller
         if ($user) {
             $comment = Comment::find($id);
 
-
-
             if (!$comment) {
                 return response()->json(['error' => 'Comment not found'], 404);
             }
-
             if ($comment->user_id === $user->id) {
                 $comment->delete();
                 return response()->json(['message' => 'Comment deleted successfully']);
             } else {
                 return response()->json(['error' => 'Unauthorized'], 403);
+            }
+        } else {
+            return response()->json(['error' => 'User not authenticated'], 401);
+        }
+    }
+
+    public function destroyByTweetId(Request $request, $tweetId)
+    {
+        $userUid = $request->header('X-User-UID');
+        $user = User::where('firebase_uid', $userUid)->first();
+
+        if ($user) {
+            $tweetId = $request->input('tweet_id');
+            if (!$tweetId) {
+                return response()->json(['error' => 'tweet_id is required'], 400);
+            }
+            try {
+                $comments = Comment::where('tweet_id', $tweetId)->get();
+
+                foreach ($comments as $comment) {
+                    $comment->delete();
+                }
+                return response()->json(['message' => 'Comments deleted successfully']);
+            } catch (\Exception $e) {
+                return response()->json(['error' => $e->getMessage()], 500);
             }
         } else {
             return response()->json(['error' => 'User not authenticated'], 401);

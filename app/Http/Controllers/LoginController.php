@@ -19,7 +19,6 @@ class LoginController extends Controller
         $laravelUser = User::where('firebase_uid', $request->uid)->first();
 
         if ($laravelUser) {
-            // ユーザーが存在する場合はログイン成功として処理
             return response()->json(['message' => 'ログイン成功']);
         } else {
             return response()->json(['error' => 'ユーザーが存在しません'], 401);
