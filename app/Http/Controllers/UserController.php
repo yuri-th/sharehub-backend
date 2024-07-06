@@ -29,8 +29,6 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        \Log::info('Received data from Firebase:', $request->all());
-
         $validator = Validator::make($request->all(), [
             'name' => 'required|string',
             'email' => 'required|email',
@@ -38,7 +36,6 @@ class UserController extends Controller
         ]);
 
         if ($validator->fails()) {
-            \Log::error('Validation Error: ' . json_encode($validator->errors()));
             return response()->json(['error' => $validator->errors()], 400);
         }
 
@@ -47,7 +44,6 @@ class UserController extends Controller
             // Firebaseから送信されたユーザー情報を取得
             $data = $request->all();
 
-            // ユーザーモデルにデータを保存
             $user = User::create([
                 'name' => $data['name'],
                 'email' => $data['email'],
@@ -58,7 +54,6 @@ class UserController extends Controller
         } catch (\Exception $e) {
             return response()->json(['error' => 'ユーザーの作成中にエラーが発生しました。'], 500);
         }
-
     }
 
     /**
