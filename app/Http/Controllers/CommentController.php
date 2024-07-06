@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\Validator;
 use App\Models\Comment;
-use App\Models\Tweet;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -31,7 +30,6 @@ class CommentController extends Controller
                 'data' => $formattedComments,
             ], 200);
         } catch (\Exception $e) {
-            // 例外が発生した場合、ログにエラーを記録する
             \Log::error($e);
 
             return response()->json([
@@ -57,12 +55,10 @@ class CommentController extends Controller
             ]);
 
             if ($validator->fails()) {
-                \Log::error('Validation Error: ' . json_encode($validator->errors()->toArray()));
 
                 return response()->json(['error' => $validator->errors()], 422);
             }
 
-            // Laravelデータベース内でFirebase UIDを使ってユーザーを取得
             $laravelUser = User::where('firebase_uid', $request->uid)->first();
             $user_id = $laravelUser->id;
             $comment = Comment::create([
@@ -73,9 +69,6 @@ class CommentController extends Controller
 
             return response()->json(['data' => $comment], 201);
         } catch (\Exception $e) {
-            \Log::error('CommentController@store Error: ' . $e->getMessage());
-            \Log::info('Debug: Comment data - ' . json_encode($request->input('comment')));
-            \Log::error($e);
             return response()->json(['error' => 'Internal Server Error'], 500);
         }
     }
@@ -86,10 +79,10 @@ class CommentController extends Controller
      * @param  \App\Models\Comment  $comment
      * @return \Illuminate\Http\Response
      */
-    public function show(Comment $comment)
-    {
-        //
-    }
+    // public function show(Comment $comment)
+    // {
+    //     //
+    // }
 
     /**
      * Update the specified resource in storage.
@@ -98,10 +91,10 @@ class CommentController extends Controller
      * @param  \App\Models\Comment  $comment
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Comment $comment)
-    {
-        //
-    }
+    // public function update(Request $request, Comment $comment)
+    // {
+    //     //
+    // }
 
     /**
      * Remove the specified resource from storage.
@@ -109,50 +102,27 @@ class CommentController extends Controller
      * @param  \App\Models\Comment  $comment
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Request $request, $id)
-    {
-        $userUid = $request->header('X-User-UID');
-        $user = User::where('firebase_uid', $userUid)->first();
 
-        if ($user) {
-            $comment = Comment::find($id);
+    // public function destroy(Request $request, $id)
+    // {
+    //     $userUid = $request->header('X-User-UID');
+    //     $user = User::where('firebase_uid', $userUid)->first();
 
-            if (!$comment) {
-                return response()->json(['error' => 'Comment not found'], 404);
-            }
-            if ($comment->user_id === $user->id) {
-                $comment->delete();
-                return response()->json(['message' => 'Comment deleted successfully']);
-            } else {
-                return response()->json(['error' => 'Unauthorized'], 403);
-            }
-        } else {
-            return response()->json(['error' => 'User not authenticated'], 401);
-        }
-    }
+    //     if ($user) {
+    //         $comment = Comment::find($id);
 
-    public function destroyByTweetId(Request $request, $tweetId)
-    {
-        $userUid = $request->header('X-User-UID');
-        $user = User::where('firebase_uid', $userUid)->first();
+    //         if (!$comment) {
+    //             return response()->json(['error' => 'Comment not found'], 404);
+    //         }
+    //         if ($comment->user_id === $user->id) {
+    //             $comment->delete();
+    //             return response()->json(['message' => 'Comment deleted successfully']);
+    //         } else {
+    //             return response()->json(['error' => 'Unauthorized'], 403);
+    //         }
+    //     } else {
+    //         return response()->json(['error' => 'User not authenticated'], 401);
+    //     }
+    // }
 
-        if ($user) {
-            $tweetId = $request->input('tweet_id');
-            if (!$tweetId) {
-                return response()->json(['error' => 'tweet_id is required'], 400);
-            }
-            try {
-                $comments = Comment::where('tweet_id', $tweetId)->get();
-
-                foreach ($comments as $comment) {
-                    $comment->delete();
-                }
-                return response()->json(['message' => 'Comments deleted successfully']);
-            } catch (\Exception $e) {
-                return response()->json(['error' => $e->getMessage()], 500);
-            }
-        } else {
-            return response()->json(['error' => 'User not authenticated'], 401);
-        }
-    }
 }

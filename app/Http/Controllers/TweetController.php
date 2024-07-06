@@ -34,7 +34,6 @@ class TweetController extends Controller
                 'data' => $formattedTweets,
             ], 200);
         } catch (\Exception $e) {
-            // 例外が発生した場合、ログにエラーを記録する
             \Log::error($e);
 
             return response()->json([

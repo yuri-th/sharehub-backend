@@ -68,8 +68,6 @@ class LikeController extends Controller
             }
 
         } catch (\Exception $e) {
-            \Log::error('TweetController@store Error: ' . $e->getMessage());
-            \Log::error($e);
             return response()->json(['error' => 'Internal Server Error'], 500);
         }
     }
@@ -80,10 +78,10 @@ class LikeController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
-    {
-        //
-    }
+    // public function show($id)
+    // {
+    //     //
+    // }
 
     /**
      * Update the specified resource in storage.
@@ -92,10 +90,10 @@ class LikeController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
-    {
-        //
-    }
+    // public function update(Request $request, $id)
+    // {
+    //     //
+    // }
 
     /**
      * Remove the specified resource from storage.
@@ -105,7 +103,6 @@ class LikeController extends Controller
      */
     public function destroy(Request $request, $id)
     {
-
         $userUid = $request->header('X-User-UID');
         $user = User::where('firebase_uid', $userUid)->first();
 
