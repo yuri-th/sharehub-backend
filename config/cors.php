@@ -15,13 +15,19 @@ return [
     |
     */
 
-    'paths' => ['*'],
-    'allowed_methods' => ['*'],
-    'allowed_origins' => ['*'],
+    'paths' => ['api/*'],
+    'allowed_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    'allowed_origins' => ['http://localhost:3000'],
     'allowed_origins_patterns' => [],
-    'allowed_headers' => ['*'],
-    'exposed_headers' => false,
-    'max_age' => false,
+    'allowed_headers' => [
+        'Accept',
+        'Authorization',
+        'Content-Type',
+        'X-Requested-With',
+        'x-user-uid',
+    ],
+    'exposed_headers' => [],
+    'max_age' => 0,
     'supports_credentials' => false,
 
 ];
