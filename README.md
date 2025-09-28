@@ -24,13 +24,13 @@ PHP/Laravel (v8)/MySQL/Firebase<br>
 
 1.MAMPの設定<br>
 [MAMP](https://www.mamp.info/en/downloads/) をダウンロード・インストール。<br>
-MAMPを起動して「Start Servers」をクリック。<br>
+MAMPを起動して「Start」をクリック。<br>
 
 2.データベース作成<br>
 ブラウザで `http://localhost/phpMyAdmin` にアクセスし、新しいデータベースを作成。
 
 3.プロジェクトをコピーしたいディレクトリにてクローン<br>
-「git clone <https://github.com/yuri-th/sharehub-backend.git>」<br>
+git clone <https://github.com/yuri-th/sharehub-backend.git><br>
 
 4.依存関係をインストール<br>
 composer install<br>
