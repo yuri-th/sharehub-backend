@@ -24,7 +24,7 @@ class TweetController extends Controller
             $items = Tweet::with('user')->get();
             $formattedTweets = $items->map(function ($tweet) {
                 return [
-                    'user_name' => $tweet->user->name,
+                    'user_name' => $tweet->user ? $tweet->user->name : 'Unknown User',
                     'tweet_text' => $tweet->tweet_text,
                     'tweet_id' => $tweet->id,
                 ];
