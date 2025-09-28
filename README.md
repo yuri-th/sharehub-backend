@@ -1,16 +1,12 @@
 ## SHARE<br>
-Twitter 風 SNSアプリ(バックエンド）<br>
+Twitter風 つぶやき共有アプリ(バックエンド）<br>
+＊API サーバー（Laravel）<br>
 
-## 作成の目的
+## 概要
 
-コミュニティ内で気軽につぶやけるアプリを活用して、コミュニケーションの活性化をはかる。
+フロントエンドアプリケーション「SHARE」のRESTful APIサーバー。<br>
 
-## アプリケーション URL<br>
-
-http://localhost/<br>
-※ログインには、名前と email、パスワードでの会員登録が必要です。<br>
-
-## 他のリポジトリ<br>
+## 関連リポジトリ<br>
 
 フロントエンドのリポジトリ<br>
 
@@ -24,12 +20,35 @@ https://github.com/yuri-th/sharehub.git
 
 PHP/Laravel (v8)/MySQL/Firebase<br>
 
-## テーブル設計<br>
-
-## ER 図<br>
-
 ## 環境構築<br>
 
-・プロジェクトをコピーしたいディレクトリにて「git clone <https://github.com/yuri-th/sharehub-backend.git>」を行いプロジェクトをコピー<br>
+1.MAMPの設定<br>
+[MAMP](https://www.mamp.info/en/downloads/) をダウンロード・インストール。<br>
+MAMPを起動して「Start Servers」をクリック。<br>
+
+2.データベース作成<br>
+ブラウザで `http://localhost/phpMyAdmin` にアクセスし、新しいデータベースを作成。
+
+3.プロジェクトをコピーしたいディレクトリにてクローン<br>
+「git clone <https://github.com/yuri-th/sharehub-backend.git>」<br>
+
+4.依存関係をインストール<br>
+composer install<br>
+
+5.環境変数設定<br>
+.env.exampleをコピーし、.env ファイルを編集。<br>
+DB設定、Firebase設定などをする。<br>
+
+6.アプリケーションキーの設定<br>
+php artisan key:generate<br>
+
+7.データベース設定・マイグレーション<br>
+php artisan migrate<br>
+
+8.サーバー起動<br>
+php artisan serve<br>
 
 ## 追記事項<br>
+MAMP以外の代替環境<br>
+・XAMPP <br>
+・Docker + Laravel Sail<br>
