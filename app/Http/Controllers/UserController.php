@@ -15,10 +15,13 @@ class UserController extends Controller
      */
     public function index()
     {
-        $items = User::all();
-        return response()->json([
-            'data' => $items
-        ], 200);
+        try {
+            $items = User::all();
+            return response()->json(['data' => $items], 200);
+        } catch (\Exception $e) {
+            \Log::error('User index error: ' . $e->getMessage());
+            return response()->json(['error' => 'Internal Server Error'], 500);
+        }
     }
 
     /**
@@ -29,31 +32,37 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string',
-            'email' => 'required|email',
-            'firebase_uid' => 'required|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()], 400);
-        }
-
-
         try {
-            // Firebaseから送信されたユーザー情報を取得
-            $data = $request->all();
+            $uid = $request->header('X-User-UID');
 
-            $user = User::create([
-                'name' => $data['name'],
-                'email' => $data['email'],
-                'firebase_uid' => $data['firebase_uid'],
+            if (!$uid) {
+                return response()->json(['error' => 'Authentication required'], 401);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users,email',
             ]);
 
+            if ($validator->fails()) {
+                return response()->json(['error' => $validator->errors()], 422);
+            }
+
+            $user = User::firstOrCreate(
+                ['firebase_uid' => $uid],
+                [
+                    'name' => $request->name,
+                    'email' => $request->email,
+                ]
+            );
+
             return response()->json(['data' => $user], 201);
+
         } catch (\Exception $e) {
-            return response()->json(['error' => 'ユーザーの作成中にエラーが発生しました。'], 500);
+            \Log::error('User creation error: ' . $e->getMessage());
+            return response()->json(['error' => 'Internal Server Error'], 500);
         }
+
     }
 
     /**

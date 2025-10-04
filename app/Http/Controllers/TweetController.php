@@ -42,12 +42,6 @@ class TweetController extends Controller
         }
     }
 
-    /**
-     * Firebase ID トークンを検証してユーザー情報を取得
-     *
-     * @param string $idToken
-     * @return mixed|null
-     */
 
 
     /**
@@ -59,32 +53,40 @@ class TweetController extends Controller
     public function store(Request $request)
     {
         try {
+            $uid = $request->header('X-User-UID');
+
+            if (!$uid) {
+                return response()->json(['error' => 'Authentication required'], 401);
+            }
+
             $validator = Validator::make($request->all(), [
                 'tweet_text' => 'required|string|max:400',
-                'uid' => 'required|string',
-                'id_token' => 'required|string',
             ]);
 
             if ($validator->fails()) {
                 \Log::error('Validation Error: ' . json_encode($validator->errors()->toArray()));
-
                 return response()->json(['error' => $validator->errors()], 422);
             }
 
-            // Laravelデータベース内でFirebase UIDを使ってユーザーを取得
-            $laravelUser = User::where('firebase_uid', $request->uid)->first();
-            $user_id = $laravelUser->id;
+            $laravelUser = User::where('firebase_uid', $uid)->first();
+
+            if (!$laravelUser) {
+                \Log::error("User not found for UID: {$uid}");
+                return response()->json(['error' => 'User not found'], 404);
+            }
+
             $tweet = Tweet::create([
-                'user_id' => $user_id,
+                'user_id' => $laravelUser->id,
                 'tweet_text' => $request->input('tweet_text'),
             ]);
 
             return response()->json(['data' => $tweet], 201);
+
         } catch (\Exception $e) {
+            \Log::error('Tweet creation error: ' . $e->getMessage());
             return response()->json(['error' => 'Internal Server Error'], 500);
         }
     }
-
 
 
     /**
@@ -125,8 +127,11 @@ class TweetController extends Controller
      */
     public function destroy(Request $request, $id)
     {
-        $userUid = $request->header('X-User-UID');
-        $user = User::where('firebase_uid', $userUid)->first();
+        $uid = $request->header('X-User-UID');
+        if (!$uid) {
+            return response()->json(['error' => 'Authentication required'], 401);
+        }
+        $user = User::where('firebase_uid', $uid)->first();
         if (!$user) {
             return response()->json(['error' => 'User not authenticated'], 401);
         }
@@ -137,14 +142,8 @@ class TweetController extends Controller
         if ($tweet->user_id !== $user->id) {
             return response()->json(['error' => '投稿者以外削除できません'], 403);
         }
-        $likes = Like::where('tweet_id', $id)->get();
-        foreach ($likes as $like) {
-            $like->delete();
-        }
-        $comments = Comment::where('tweet_id', $id)->get();
-        foreach ($comments as $comment) {
-            $comment->delete();
-        }
+        Like::where('tweet_id', $id)->delete();
+        Comment::where('tweet_id', $id)->delete();
         $tweet->delete();
 
         return response()->json(['message' => 'Tweet deleted successfully']);

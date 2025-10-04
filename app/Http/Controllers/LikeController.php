@@ -43,31 +43,49 @@ class LikeController extends Controller
     public function store(Request $request)
     {
         try {
+            $uid = $request->header('X-User-UID');
+
+            if (!$uid) {
+                return response()->json([
+                    'error' => 'Authentication required'
+                ], 401);
+            }
+
             $validator = Validator::make($request->all(), [
-                'tweet_id' => 'required',
-                'uid' => 'required|string',
-                'id_token' => 'required|string',
+                'tweet_id' => 'required|integer|exists:tweets,id',
             ]);
+
             if ($validator->fails()) {
+                \Log::error('Like validation error: ' . json_encode($validator->errors()->toArray()));
                 return response()->json(['error' => $validator->errors()], 422);
             }
 
-            $laravelUser = User::where('firebase_uid', $request->uid)->first();
+            $laravelUser = User::where('firebase_uid', $uid)->first();
+
             if (!$laravelUser) {
+                \Log::error("User not found for UID: {$uid}");
                 return response()->json(['error' => 'User not found'], 404);
             }
+
             $user_id = $laravelUser->id;
 
-            $tweet = Tweet::where('id', $request->tweet_id)->first();
-            if ($tweet) {
-                Like::updateOrCreate(
-                    ['user_id' => $user_id, 'tweet_id' => $request->tweet_id],
-                    ['user_id' => $user_id, 'tweet_id' => $request->tweet_id]
-                );
-                return response()->json(['data' => $tweet], 201);
+            // ツイートの存在確認
+            $tweet = Tweet::find($request->tweet_id);
+
+            if (!$tweet) {
+                return response()->json(['error' => 'Tweet not found'], 404);
             }
 
+            // いいねを作成または更新
+            $like = Like::updateOrCreate(
+                ['user_id' => $user_id, 'tweet_id' => $request->tweet_id],
+                ['user_id' => $user_id, 'tweet_id' => $request->tweet_id]
+            );
+
+            return response()->json(['data' => $like], 201);
+
         } catch (\Exception $e) {
+            \Log::error('Like creation error: ' . $e->getMessage());
             return response()->json(['error' => 'Internal Server Error'], 500);
         }
     }
@@ -103,23 +121,34 @@ class LikeController extends Controller
      */
     public function destroy(Request $request, $id)
     {
-        $userUid = $request->header('X-User-UID');
-        $user = User::where('firebase_uid', $userUid)->first();
+        try {
+            $uid = $request->header('X-User-UID');
 
-        if ($user) {
-            $like = Like::where('tweet_id', $id)->where('user_id', $user->id)->first();
+            if (!$uid) {
+                return response()->json(['error' => 'Authentication required'], 401);
+            }
+
+            $user = User::where('firebase_uid', $uid)->first();
+
+            if (!$user) {
+                return response()->json(['error' => 'User not authenticated'], 401);
+            }
+
+            $like = Like::where('tweet_id', $id)
+                ->where('user_id', $user->id)
+                ->first();
 
             if (!$like) {
-                return response()->json(['error' => 'Tweet not found'], 404);
+                return response()->json(['error' => 'Like not found'], 404);
             }
-            if ($like->user_id === $user->id) {
-                $like->delete();
-                return response()->json(['message' => 'Tweet deleted successfully']);
-            } else {
-                return response()->json(['error' => 'Unauthorized'], 403);
-            }
-        } else {
-            return response()->json(['error' => 'User not authenticated'], 401);
+
+            $like->delete();
+
+            return response()->json(['message' => 'Like deleted successfully'], 200);
+
+        } catch (\Exception $e) {
+            \Log::error('Like deletion error: ' . $e->getMessage());
+            return response()->json(['error' => 'Internal Server Error'], 500);
         }
     }
 }

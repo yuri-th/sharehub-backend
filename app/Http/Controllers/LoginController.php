@@ -4,25 +4,49 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Support\Facades\Validator;
+
 
 class LoginController extends Controller
 {
     public function login(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|string',
-            'uid' => 'required|string',
-        ]);
+        try {
+            $uid = $request->header('X-User-UID');
 
-        // Laravel ユーザーテーブルで Firebase UID に対応するユーザーを検索
-        $laravelUser = User::where('firebase_uid', $request->uid)->first();
+            if (!$uid) {
+                return response()->json(['error' => 'Authentication required'], 401);
+            }
 
-        if ($laravelUser) {
-            return response()->json(['message' => 'ログイン成功']);
-        } else {
-            return response()->json(['error' => 'ユーザーが存在しません'], 401);
+            $validator = Validator::make($request->all(), [
+                'email' => 'required|email',
+                'name' => 'required|string|max:255',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['error' => $validator->errors()], 422);
+            }
+
+            $laravelUser = User::firstOrCreate(
+                ['firebase_uid' => $uid],
+                [
+                    'email' => $request->email,
+                    'name' => $request->name,
+                ]
+            );
+
+            return response()->json([
+                'message' => 'ログイン成功',
+                'user' => [
+                    'id' => $laravelUser->id,
+                    'name' => $laravelUser->name,
+                    'email' => $laravelUser->email,
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            \Log::error('Login error: ' . $e->getMessage());
+            return response()->json(['error' => 'Internal Server Error'], 500);
         }
-
     }
 }

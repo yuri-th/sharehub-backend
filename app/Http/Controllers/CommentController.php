@@ -14,27 +14,34 @@ class CommentController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $items = Comment::with('user')->get();
+            $tweetId = $request->query('tweet_id');
+
+            // tweet_idがある場合は絞り込み、ない場合は全件取得
+            if ($tweetId) {
+                $items = Comment::with('user')
+                    ->where('tweet_id', $tweetId)
+                    ->get();
+            } else {
+                $items = Comment::with('user')->get();
+            }
+
             $formattedComments = $items->map(function ($comment) {
                 return [
+                    'id' => $comment->id,
                     'user_name' => $comment->user->name,
                     'comment' => $comment->comment,
                     'tweet_id' => $comment->tweet_id,
                 ];
             });
 
-            return response()->json([
-                'data' => $formattedComments,
-            ], 200);
-        } catch (\Exception $e) {
-            \Log::error($e);
+            return response()->json(['data' => $formattedComments], 200);
 
-            return response()->json([
-                'error' => 'Internal Server Error',
-            ], 500);
+        } catch (\Exception $e) {
+            \Log::error('Comment index error: ' . $e->getMessage());
+            return response()->json(['error' => 'Internal Server Error'], 500);
         }
     }
 
@@ -47,31 +54,43 @@ class CommentController extends Controller
     public function store(Request $request)
     {
         try {
+            $uid = $request->header('X-User-UID');
+
+            if (!$uid) {
+                return response()->json(['error' => 'Authentication required'], 401);
+            }
+
             $validator = Validator::make($request->all(), [
-                'uid' => 'required|string',
-                'id_token' => 'required|string',
-                'tweet_id' => 'required',
+                'tweet_id' => 'required|integer|exists:tweets,id',
                 'comment' => 'required|string|max:400',
             ]);
 
             if ($validator->fails()) {
-
+                \Log::error('Comment validation error: ' . json_encode($validator->errors()->toArray()));
                 return response()->json(['error' => $validator->errors()], 422);
             }
 
-            $laravelUser = User::where('firebase_uid', $request->uid)->first();
-            $user_id = $laravelUser->id;
+            $laravelUser = User::where('firebase_uid', $uid)->first();
+
+            if (!$laravelUser) {
+                \Log::error("User not found for UID: {$uid}");
+                return response()->json(['error' => 'User not found'], 404);
+            }
+
             $comment = Comment::create([
-                'user_id' => $user_id,
+                'user_id' => $laravelUser->id,
                 'tweet_id' => $request->tweet_id,
-                'comment' => $request->input('comment'),
+                'comment' => $request->comment,
             ]);
 
             return response()->json(['data' => $comment], 201);
+
         } catch (\Exception $e) {
+            \Log::error('Comment creation error: ' . $e->getMessage());
             return response()->json(['error' => 'Internal Server Error'], 500);
         }
     }
+
 
     /**
      * Display the specified resource.
@@ -105,24 +124,6 @@ class CommentController extends Controller
 
     // public function destroy(Request $request, $id)
     // {
-    //     $userUid = $request->header('X-User-UID');
-    //     $user = User::where('firebase_uid', $userUid)->first();
-
-    //     if ($user) {
-    //         $comment = Comment::find($id);
-
-    //         if (!$comment) {
-    //             return response()->json(['error' => 'Comment not found'], 404);
-    //         }
-    //         if ($comment->user_id === $user->id) {
-    //             $comment->delete();
-    //             return response()->json(['message' => 'Comment deleted successfully']);
-    //         } else {
-    //             return response()->json(['error' => 'Unauthorized'], 403);
-    //         }
-    //     } else {
-    //         return response()->json(['error' => 'User not authenticated'], 401);
-    //     }
     // }
 
 }
