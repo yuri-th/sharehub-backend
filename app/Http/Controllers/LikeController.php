@@ -43,7 +43,7 @@ class LikeController extends Controller
     public function store(Request $request)
     {
         try {
-            $uid = $request->header('X-User-UID');
+            $uid = $request->firebase_uid;
 
             if (!$uid) {
                 return response()->json([
@@ -122,7 +122,7 @@ class LikeController extends Controller
     public function destroy(Request $request, $id)
     {
         try {
-            $uid = $request->header('X-User-UID');
+            $uid = $request->firebase_uid;
 
             if (!$uid) {
                 return response()->json(['error' => 'Authentication required'], 401);

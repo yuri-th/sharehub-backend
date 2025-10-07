@@ -53,7 +53,7 @@ class TweetController extends Controller
     public function store(Request $request)
     {
         try {
-            $uid = $request->header('X-User-UID');
+            $uid = $request->firebase_uid;
 
             if (!$uid) {
                 return response()->json(['error' => 'Authentication required'], 401);
@@ -98,6 +98,7 @@ class TweetController extends Controller
     public function show($id)
     {
         $tweet = Tweet::with('user')->find($id);
+
         if (!$tweet) {
             return response()->json(['error' => 'Tweet not found'], 404);
         }
@@ -127,21 +128,28 @@ class TweetController extends Controller
      */
     public function destroy(Request $request, $id)
     {
-        $uid = $request->header('X-User-UID');
+        $uid = $request->firebase_uid;
+
         if (!$uid) {
             return response()->json(['error' => 'Authentication required'], 401);
         }
+
         $user = User::where('firebase_uid', $uid)->first();
+
         if (!$user) {
             return response()->json(['error' => 'User not authenticated'], 401);
         }
+
         $tweet = Tweet::find($id);
+
         if (!$tweet) {
             return response()->json(['error' => 'Tweet not found'], 404);
         }
+
         if ($tweet->user_id !== $user->id) {
             return response()->json(['error' => '投稿者以外削除できません'], 403);
         }
+
         Like::where('tweet_id', $id)->delete();
         Comment::where('tweet_id', $id)->delete();
         $tweet->delete();

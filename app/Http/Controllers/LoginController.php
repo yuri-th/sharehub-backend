@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Validator;
+use Kreait\Firebase\Contract\Auth as FirebaseAuth;
 
 
 class LoginController extends Controller
@@ -12,7 +13,9 @@ class LoginController extends Controller
     public function login(Request $request)
     {
         try {
-            $uid = $request->header('X-User-UID');
+            $idToken = $request->bearerToken();
+            $verifiedIdToken = app(FirebaseAuth::class)->verifyIdToken($idToken);
+            $uid = $verifiedIdToken->claims()->get('sub');
 
             if (!$uid) {
                 return response()->json(['error' => 'Authentication required'], 401);

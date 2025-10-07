@@ -20,14 +20,13 @@ use App\Http\Controllers\CommentController;
 |
 */
 
-Route::apiResource('/share', UserController::class);
-Route::apiResource('/tweet', TweetController::class);
-Route::apiResource('/like', LikeController::class);
-Route::apiResource('/comment', CommentController::class);
-
-
-
-// ログイン関連のAPIルート
+//認証不要
 Route::post('/login', [LoginController::class, 'login']);
-// Route::post('/logout', [LogoutController::class, 'logout']);
+
+Route::middleware('firebase.auth')->group(function () {
+    Route::apiResource('/users', UserController::class);
+    Route::apiResource('/tweets', TweetController::class);
+    Route::apiResource('/likes', LikeController::class);
+    Route::apiResource('/comments', CommentController::class);
+});
 
